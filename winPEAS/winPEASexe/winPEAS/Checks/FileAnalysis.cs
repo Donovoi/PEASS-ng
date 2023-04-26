@@ -148,45 +148,85 @@ namespace winPEAS.Checks
             return new bool[] { false, somethingFound };
         }
 
-        private static List<string> SearchContent(string text, string regex_str, bool caseinsensitive)
+        //private static List<string> SearchContent(string text, string regex_str, bool caseinsensitive)
+        //{
+        //    List<string> foundMatches = new List<string>();
+
+        //    try
+        //    {
+        //        Regex rgx;
+        //        bool is_re_match = false;
+        //        try
+        //        {
+        //            // Use "IsMatch" because it supports timeout, if exception is thrown exit the func to avoid ReDoS in "rgx.Matches"
+        //            if (caseinsensitive)
+        //            {
+        //                is_re_match = Regex.IsMatch(text, regex_str.Trim(), RegexOptions.IgnoreCase, TimeSpan.FromSeconds(120));
+        //                rgx = new Regex(regex_str.Trim(), RegexOptions.IgnoreCase);
+        //            }
+        //            else
+        //            {
+        //                is_re_match = Regex.IsMatch(text, regex_str.Trim(), RegexOptions.None, TimeSpan.FromSeconds(120));
+        //                rgx = new Regex(regex_str.Trim());
+        //            }
+        //        }
+        //        catch (RegexMatchTimeoutException e)
+        //        {
+        //            if (Checks.IsDebug)
+        //            {
+        //                Beaprint.GrayPrint($"The regex {regex_str} had a timeout (ReDoS avoided but regex unchecked in a file)");
+        //            }
+        //            return foundMatches;
+        //        }
+
+        //        if (!is_re_match)
+        //        {
+        //            return foundMatches;
+        //        }
+
+        //        int cont = 0;
+        //        foreach (Match match in rgx.Matches(text))
+        //        {
+        //            if (cont > 10) break;
+
+        //            if (match.Value.Length < 400 && match.Value.Trim().Length > 2)
+        //                foundMatches.Add(match.Value);
+
+        //            cont++;
+        //        }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Beaprint.GrayPrint($"Error looking for regex {regex_str} inside files: {e}");
+        //    }
+
+        //    //}
+
+        //    return foundMatches;
+        //}
+
+
+        private static List<string> SearchContent(string text, string regex_str, bool caseInsensitive)
         {
             List<string> foundMatches = new List<string>();
+            RegexOptions options = caseInsensitive ? RegexOptions.IgnoreCase : RegexOptions.None;
 
             try
             {
-                Regex rgx;
-                bool is_re_match = false;
-                try
-                {
-                    // Use "IsMatch" because it supports timeout, if exception is thrown exit the func to avoid ReDoS in "rgx.Matches"
-                    if (caseinsensitive)
-                    {
-                        is_re_match = Regex.IsMatch(text, regex_str.Trim(), RegexOptions.IgnoreCase, TimeSpan.FromSeconds(120));
-                        rgx = new Regex(regex_str.Trim(), RegexOptions.IgnoreCase);
-                    }
-                    else
-                    {
-                        is_re_match = Regex.IsMatch(text, regex_str.Trim(), RegexOptions.None, TimeSpan.FromSeconds(120));
-                        rgx = new Regex(regex_str.Trim());
-                    }
-                }
-                catch (RegexMatchTimeoutException e)
-                {
-                    if (Checks.IsDebug)
-                    {
-                        Beaprint.GrayPrint($"The regex {regex_str} had a timeout (ReDoS avoided but regex unchecked in a file)");
-                    }
-                    return foundMatches;
-                }
-
-                if (!is_re_match)
-                {
-                    return foundMatches;
-                }
+                Regex rgx = new Regex(regex_str.Trim(), options | RegexOptions.Compiled);
 
                 int cont = 0;
-                foreach (Match match in rgx.Matches(text))
+                DateTime timeoutTime = DateTime.Now.AddSeconds(120);
+
+                for (Match match = rgx.Match(text); match.Success; match = match.NextMatch())
                 {
+                    if (DateTime.Now >= timeoutTime)
+                    {
+                        if (Checks.IsDebug)
+                            Beaprint.GrayPrint($"The regex {regex_str} had a timeout (ReDoS avoided but regex unchecked in a file)");
+                        break;
+                    }
+
                     if (cont > 10) break;
 
                     if (match.Value.Length < 400 && match.Value.Trim().Length > 2)
@@ -200,10 +240,9 @@ namespace winPEAS.Checks
                 Beaprint.GrayPrint($"Error looking for regex {regex_str} inside files: {e}");
             }
 
-            //}
-
             return foundMatches;
         }
+
 
         private static void PrintYAMLSearchFiles()
         {

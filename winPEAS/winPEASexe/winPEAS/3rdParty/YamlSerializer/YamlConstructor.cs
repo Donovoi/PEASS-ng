@@ -182,13 +182,19 @@ namespace System.Yaml.Serialization
                     j += elementSize;
                 }
                 return array;
-            } 
-
-            if ( node.Value == "" ) {
-                return config.Activator.Activate(type);
-            } else {
-                return TypeDescriptor.GetConverter(type).ConvertFromString(node.Value);
             }
+
+            if (type == typeof(object))
+                throw new FormatException($"Cannot convert scalar value '{node.Value}' to object without a specific type.");
+
+            if (node.Value == "")
+                return config.Activator.Activate(type);
+
+            if (EasyTypeConverter.IsTypeConverterSpecified(type))
+                return config.TypeConverter.ConvertFromString(node.Value, type);
+            else
+                return TypeDescriptor.GetConverter(type).ConvertFromString(node.Value);
+
         }
 
         object SequenceToObject(YamlSequence seq, Type type, Dictionary<YamlNode, object> appeared)
