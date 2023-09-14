@@ -10,6 +10,14 @@ REM Registry scan of other drives besides
 REM /////true or false
 SET long=false
 
+REM Check if the current path contains spaces
+SET "CurrentFolder=%~dp0"
+IF "!CurrentFolder!" NEQ "!CurrentFolder: =!" (
+    ECHO winPEAS.bat cannot run if the current path contains spaces.
+	ECHO Exiting.
+    EXIT /B 1
+)
+
 :Splash
 ECHO.
 CALL :ColorLine "            %E%32m((,.,/((((((((((((((((((((/,  */%E%97m"
@@ -565,7 +573,7 @@ CALL :T_Progress 2
 
 :AppCMD
 CALL :ColorLine " %E%33m[+]%E%97m AppCmd"
-ECHO.   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#appcmd-exe
+ECHO.   [?] https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation#appcmd.exe
 IF EXIST %systemroot%\system32\inetsrv\appcmd.exe ECHO.%systemroot%\system32\inetsrv\appcmd.exe exists. 
 ECHO.
 CALL :T_Progress 2
